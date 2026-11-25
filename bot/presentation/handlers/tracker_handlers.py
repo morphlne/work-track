@@ -8,6 +8,7 @@ from aiogram.types import Message
 from bot.application.task_tracker_service import TaskTrackerService
 from bot.presentation.keyboards.main_menu import (
     ADD_TASK_BUTTON,
+    BUSINESS_PROJECT_BUTTON,
     CANCEL_BUTTON,
     CHANGE_EMAIL_BUTTON,
     SEND_EMAIL_BUTTON,
@@ -16,7 +17,11 @@ from bot.presentation.keyboards.main_menu import (
     build_cancel_keyboard,
     build_main_menu_keyboard,
 )
-from bot.presentation.states.tracker_states import EmailInputState, TaskInputState
+from bot.presentation.states.tracker_states import (
+    EmailInputState,
+    LeadRequestState,
+    TaskInputState,
+)
 
 EMAIL_PATTERN = re.compile(r"^[^@\s]+@[^@\s]+\.[^@\s]+$")
 
@@ -190,6 +195,124 @@ def build_tracker_router(tracker_service: TaskTrackerService) -> Router:
 
         await message.answer(
             f"📨 Итог за сегодня отправлен на {recipient_email}.",
+            reply_markup=build_main_menu_keyboard(),
+        )
+
+    @router.message(F.text == BUSINESS_PROJECT_BUTTON)
+    async def handle_business_project_start(message: Message, state: FSMContext) -> None:
+        await state.set_state(LeadRequestState.waiting_for_description)
+        await message.answer(
+            "Опишите задачу для вашего бизнеса, вставьте текст вакансии или ссылку:",
+            reply_markup=build_cancel_keyboard(),
+        )
+
+    @router.message(LeadRequestState.waiting_for_description)
+    async def handle_lead_description(message: Message, state: FSMContext) -> None:
+        description = (message.text or "").strip()
+        if not description:
+            await message.answer("Описание не может быть пустым. Попробуйте ещё раз:")
+            return
+
+        await state.update_data(lead_description=description)
+        await state.set_state(LeadRequestState.waiting_for_budget)
+        await message.answer(
+            "Укажите планируемый бюджет или вилку оплаты в USD:",
+            reply_markup=build_cancel_keyboard(),
+        )
+
+    @router.message(LeadRequestState.waiting_for_budget)
+    async def handle_lead_budget(message: Message, state: FSMContext) -> None:
+        budget_usd = (message.text or "").strip()
+        if not budget_usd:
+            await message.answer("Укажите бюджет или оплату в USD:")
+            return
+
+        normalized_budget = budget_usd.replace(",", ".").replace("$", "").strip()
+        try:
+            if float(normalized_budget) <= 0:
+                await message.answer(
+                    "Бюджет должен быть больше нуля. Укажите сумму в USD:"
+                )
+                return
+        except ValueError:
+            pass
+
+        user = message.from_user
+        tg_username = f"@{user.username}" if user and user.username else ""
+        saved_email = await tracker_service.get_saved_email(user.id)
+
+        contact_parts = [part for part in (tg_username, saved_email) if part]
+
+        if contact_parts:
+            data = await state.get_data()
+            auto_contact = ", ".join(contact_parts)
+            display_username = tg_username or (user.full_name if user else "Без username")
+
+            try:
+                await tracker_service.submit_lead_request(
+                    user_id=user.id,
+                    username=display_username,
+                    description=data["lead_description"],
+                    budget_usd=budget_usd,
+                    contact=auto_contact,
+                )
+            except Exception:
+                await state.clear()
+                await message.answer(
+                    "Заявка сохранена в базе, но не удалось отправить уведомление на почту.",
+                    reply_markup=build_main_menu_keyboard(),
+                )
+                return
+
+            await state.clear()
+            await message.answer(
+                f"✅ Спасибо! Заявка принята.\n"
+                f"Бюджет: {budget_usd} USD\n"
+                f"Контакт для связи: {auto_contact}",
+                reply_markup=build_main_menu_keyboard(),
+            )
+            return
+
+        await state.update_data(lead_budget=budget_usd)
+        await state.set_state(LeadRequestState.waiting_for_contact)
+        await message.answer(
+            "У вас не задан @username в Telegram и не сохранён Email."
+            "Укажите контакт для связи (Email или телефон):",
+            reply_markup=build_cancel_keyboard(),
+        )
+
+    @router.message(LeadRequestState.waiting_for_contact)
+    async def handle_lead_contact(message: Message, state: FSMContext) -> None:
+        contact = (message.text or "").strip()
+        if not contact:
+            await message.answer("Контакт не может быть пустым. Введите Email или телефон:")
+            return
+
+        user = message.from_user
+        data = await state.get_data()
+        display_username = user.full_name if user else "Без username"
+
+        try:
+            await tracker_service.submit_lead_request(
+                user_id=user.id,
+                username=display_username,
+                description=data["lead_description"],
+                budget_usd=data["lead_budget"],
+                contact=contact,
+            )
+        except Exception:
+            await state.clear()
+            await message.answer(
+                "Заявка сохранена в базе, но не удалось отправить уведомление на почту.",
+                reply_markup=build_main_menu_keyboard(),
+            )
+            return
+
+        await state.clear()
+        await message.answer(
+            f"✅ Спасибо! Заявка принята."
+            f"Бюджет: {data['lead_budget']} USD"
+            f"Контакт для связи: {contact}",
             reply_markup=build_main_menu_keyboard(),
         )
 

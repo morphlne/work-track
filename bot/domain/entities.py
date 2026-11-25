@@ -30,3 +30,14 @@ class DailyBriefing:
     report_date: date
     tasks: list[TaskEntry]
     total_hours: float
+
+
+@dataclass(frozen=True)
+class LeadRequest:
+    id: int
+    user_id: int
+    username: str
+    description: str
+    budget_usd: str
+    contact: str
+    created_at: datetime

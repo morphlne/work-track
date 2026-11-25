@@ -8,3 +8,9 @@ class TaskInputState(StatesGroup):
 
 class EmailInputState(StatesGroup):
     waiting_for_email = State()
+
+
+class LeadRequestState(StatesGroup):
+    waiting_for_description = State()
+    waiting_for_budget = State()
+    waiting_for_contact = State()

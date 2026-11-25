@@ -5,6 +5,7 @@ TODAY_SUMMARY_BUTTON = "📊 Итог за сегодня"
 WEATHER_CURRENCY_BUTTON = "🌤 Погода и курс"
 SEND_EMAIL_BUTTON = "📧 Отправить итог на Email"
 CHANGE_EMAIL_BUTTON = "✉️ Изменить Email"
+BUSINESS_PROJECT_BUTTON = "🚀 Проект под ваш бизнес"
 CANCEL_BUTTON = "❌ Отмена"
 
 
@@ -20,6 +21,7 @@ def build_main_menu_keyboard() -> ReplyKeyboardMarkup:
                 KeyboardButton(text=SEND_EMAIL_BUTTON),
                 KeyboardButton(text=CHANGE_EMAIL_BUTTON),
             ],
+            [KeyboardButton(text=BUSINESS_PROJECT_BUTTON)],
         ],
         resize_keyboard=True,
     )

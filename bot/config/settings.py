@@ -14,6 +14,7 @@ class Settings(BaseSettings):
     smtp_username: str = ""
     smtp_password: str = ""
     smtp_sender_email: str = ""
+    lead_recipient_email: str = ""
 
     model_config = SettingsConfigDict(
         env_file=".env",

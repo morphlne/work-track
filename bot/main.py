@@ -8,6 +8,7 @@ from bot.application.task_tracker_service import TaskTrackerService
 from bot.config.settings import load_settings
 from bot.infrastructure.database.sqlite_cache_storage import SQLiteCacheStorage
 from bot.infrastructure.database.sqlite_connection import SQLiteConnectionManager
+from bot.infrastructure.database.sqlite_lead_repository import SQLiteLeadRepository
 from bot.infrastructure.database.sqlite_task_repository import SQLiteTaskRepository
 from bot.infrastructure.database.sqlite_user_settings_repository import (
     SQLiteUserSettingsRepository,
@@ -29,10 +30,12 @@ async def run_bot() -> None:
     connection_manager = SQLiteConnectionManager(settings.database_path)
     task_repository = SQLiteTaskRepository(connection_manager)
     user_settings_repository = SQLiteUserSettingsRepository(connection_manager)
+    lead_repository = SQLiteLeadRepository(connection_manager)
     cache_storage = SQLiteCacheStorage(connection_manager)
 
     await task_repository.initialize()
     await user_settings_repository.initialize()
+    await lead_repository.initialize()
     await cache_storage.initialize()
 
     async with aiohttp.ClientSession() as http_session:
@@ -60,9 +63,11 @@ async def run_bot() -> None:
         tracker_service = TaskTrackerService(
             task_repository=task_repository,
             user_settings_repository=user_settings_repository,
+            lead_repository=lead_repository,
             currency_provider=currency_client,
             weather_provider=weather_client,
             email_dispatcher=email_dispatcher,
+            lead_recipient_email=settings.lead_recipient_email,
         )
 
         bot = Bot(token=settings.bot_token)

@@ -1,7 +1,7 @@
 from datetime import date, datetime
 from typing import Optional, Protocol
 
-from bot.domain.entities import CurrencyRate, TaskEntry, WeatherSnapshot
+from bot.domain.entities import CurrencyRate, LeadRequest, TaskEntry, WeatherSnapshot
 
 
 class TaskRepository(Protocol):
@@ -28,6 +28,20 @@ class UserSettingsRepository(Protocol):
     async def get_email(self, user_id: int) -> Optional[str]: ...
 
     async def save_email(self, user_id: int, email: str) -> None: ...
+
+
+class LeadRepository(Protocol):
+    async def initialize(self) -> None: ...
+
+    async def add_lead(
+        self,
+        user_id: int,
+        username: str,
+        description: str,
+        budget_usd: str,
+        contact: str,
+        created_at: datetime,
+    ) -> LeadRequest: ...
 
 
 class CacheStorage(Protocol):
