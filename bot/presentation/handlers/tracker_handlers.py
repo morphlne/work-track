@@ -12,6 +12,7 @@ from bot.presentation.keyboards.main_menu import (
     CHANGE_EMAIL_BUTTON,
     SEND_EMAIL_BUTTON,
     TODAY_SUMMARY_BUTTON,
+    WEATHER_CURRENCY_BUTTON,
     build_cancel_keyboard,
     build_main_menu_keyboard,
 )
@@ -28,7 +29,7 @@ def build_tracker_router(tracker_service: TaskTrackerService) -> Router:
         await state.clear()
         await message.answer(
             "Привет! Я помогу вести учёт задач и времени за день, "
-            "а также отправлять сводку на почту.",
+            "отправлять сводку на почту, а также проверять погоду и курс валют.",
             reply_markup=build_main_menu_keyboard(),
         )
 
@@ -96,6 +97,15 @@ def build_tracker_router(tracker_service: TaskTrackerService) -> Router:
         report_text = tracker_service.format_plain_report(briefing)
         await message.answer(
             report_text,
+            reply_markup=build_main_menu_keyboard(),
+        )
+
+    @router.message(F.text == WEATHER_CURRENCY_BUTTON)
+    async def handle_weather_and_currency(message: Message, state: FSMContext) -> None:
+        await state.clear()
+        info_text = await tracker_service.build_market_weather_info()
+        await message.answer(
+            info_text,
             reply_markup=build_main_menu_keyboard(),
         )
 

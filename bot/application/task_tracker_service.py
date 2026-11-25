@@ -44,16 +44,37 @@ class TaskTrackerService:
         today = datetime.now(timezone.utc).date()
         tasks = await self._task_repository.get_tasks_for_date(user_id, today)
         total_hours = round(sum(task.hours for task in tasks), 2)
-        currency_rate = await self._currency_provider.get_usd_rate()
-        weather = await self._weather_provider.get_current_weather()
 
         return DailyBriefing(
             report_date=today,
             tasks=tasks,
             total_hours=total_hours,
-            currency_rate=currency_rate,
-            weather=weather,
         )
+
+    async def build_market_weather_info(self) -> str:
+        weather = await self._weather_provider.get_current_weather()
+        currency_rate = await self._currency_provider.get_usd_rate()
+
+        lines: list[str] = []
+
+        if weather:
+            lines.append(
+                f"🌤 Погода ({weather.city}): "
+                f"{weather.temperature_c:+.1f}°C, "
+                f"ветер {weather.wind_speed_kmh:.1f} км/ч"
+            )
+        else:
+            lines.append("🌤 Погода: данные временно недоступны")
+
+        if currency_rate:
+            lines.append(
+                f"💵 Курс {currency_rate.code} (НБРБ): "
+                f"{currency_rate.rate_byn:.4f} BYN"
+            )
+        else:
+            lines.append("💵 Курс USD (НБРБ): данные временно недоступны")
+
+        return "\n".join(lines)
 
     async def get_saved_email(self, user_id: int) -> Optional[str]:
         return await self._user_settings_repository.get_email(user_id)
@@ -91,20 +112,5 @@ class TaskTrackerService:
         else:
             for index, task in enumerate(briefing.tasks, start=1):
                 lines.append(f"{index}. {task.title} — {task.hours:g} ч.")
-
-        lines.append("")
-
-        if briefing.weather:
-            lines.append(
-                f"Погода ({briefing.weather.city}): "
-                f"{briefing.weather.temperature_c:+.1f}°C, "
-                f"ветер {briefing.weather.wind_speed_kmh:.1f} км/ч"
-            )
-
-        if briefing.currency_rate:
-            lines.append(
-                f"Курс {briefing.currency_rate.code} (НБРБ): "
-                f"{briefing.currency_rate.rate_byn:.4f} BYN"
-            )
 
         return "\n".join(lines)

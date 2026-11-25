@@ -1,6 +1,5 @@
 from dataclasses import dataclass
 from datetime import date, datetime
-from typing import Optional
 
 
 @dataclass(frozen=True)
@@ -31,5 +30,3 @@ class DailyBriefing:
     report_date: date
     tasks: list[TaskEntry]
     total_hours: float
-    currency_rate: Optional[CurrencyRate]
-    weather: Optional[WeatherSnapshot]
