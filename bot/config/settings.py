@@ -15,6 +15,10 @@ class Settings(BaseSettings):
         validation_alias=AliasChoices("PORT", "HEALTHCHECK_PORT"),
     )
 
+    email_provider: str = "smtp"
+    gas_webhook_url: str = ""
+    gas_secret_token: str = ""
+
     smtp_host: str = "smtp.gmail.com"
     smtp_port: int = 465
     smtp_username: str = ""

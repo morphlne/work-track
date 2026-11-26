@@ -16,6 +16,7 @@ from bot.infrastructure.database.sqlite_user_settings_repository import (
 )
 from bot.infrastructure.external_api.nbrb_currency_client import NbrbCurrencyClient
 from bot.infrastructure.external_api.open_meteo_client import OpenMeteoClient
+from bot.infrastructure.mail.gas_dispatcher import GoogleAppsScriptEmailDispatcher
 from bot.infrastructure.mail.smtp_dispatcher import SmtpEmailDispatcher
 from bot.infrastructure.web.healthcheck_server import HealthcheckServer
 from bot.localization.translator import Translator
@@ -60,13 +61,20 @@ async def run_bot() -> None:
             city_name=settings.default_city_name,
             cache_ttl_seconds=settings.api_cache_ttl_seconds,
         )
-        email_dispatcher = SmtpEmailDispatcher(
-            host=settings.smtp_host,
-            port=settings.smtp_port,
-            username=settings.smtp_username,
-            password=settings.smtp_password,
-            sender_email=settings.smtp_sender_email,
-        )
+        if settings.email_provider.strip().lower() == "gas":
+            email_dispatcher = GoogleAppsScriptEmailDispatcher(
+                session=http_session,
+                webhook_url=settings.gas_webhook_url,
+                secret_token=settings.gas_secret_token,
+            )
+        else:
+            email_dispatcher = SmtpEmailDispatcher(
+                host=settings.smtp_host,
+                port=settings.smtp_port,
+                username=settings.smtp_username,
+                password=settings.smtp_password,
+                sender_email=settings.smtp_sender_email,
+            )
 
         tracker_service = TaskTrackerService(
             task_repository=task_repository,

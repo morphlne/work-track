@@ -1,3 +1,4 @@
+import logging
 import re
 
 from aiogram import F, Router
@@ -17,6 +18,7 @@ from bot.presentation.states.tracker_states import (
     TaskInputState,
 )
 
+logger = logging.getLogger(__name__)
 EMAIL_PATTERN = re.compile(r"^[^@\s]+@[^@\s]+\.[^@\s]+$")
 
 
@@ -150,6 +152,7 @@ def build_tracker_router(
                 recipient_email=saved_email,
             )
         except Exception:
+            logger.exception("Email delivery failed")
             await message.answer(
                 translator.get("messages.send_email_failed"),
                 reply_markup=build_main_menu_keyboard(translator),
@@ -191,6 +194,7 @@ def build_tracker_router(
                 recipient_email=recipient_email,
             )
         except Exception:
+            logger.exception("Email delivery failed")
             await message.answer(
                 translator.get("messages.email_saved_but_send_failed"),
                 reply_markup=build_main_menu_keyboard(translator),
@@ -259,6 +263,7 @@ def build_tracker_router(
                     contact=auto_contact,
                 )
             except Exception:
+                logger.exception("Email delivery failed")
                 await state.clear()
                 await message.answer(
                     translator.get("messages.lead_saved_email_failed"),
@@ -304,6 +309,7 @@ def build_tracker_router(
                 contact=contact,
             )
         except Exception:
+            logger.exception("Email delivery failed")
             await state.clear()
             await message.answer(
                 translator.get("messages.lead_saved_email_failed"),
