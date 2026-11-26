@@ -1,0 +1,64 @@
+[buttons]
+add_task = "➕ Добавить задачу"
+today_summary = "📊 Итог за сегодня"
+weather_currency = "🌤 Погода и курс"
+send_email = "📧 Отправить итог на Email"
+change_email = "✉️ Изменить Email"
+business_project = "🚀 Проект под ваш бизнес"
+cancel = "❌ Отмена"
+
+[messages]
+start = "Привет! Я помогу вести учёт задач и времени за день, отправлять сводку на почту, а также проверять погоду и курс валют."
+cancelled = "Действие отменено."
+ask_task_title = "Введите название задачи:"
+empty_task_title = "Название не может быть пустым. Попробуйте ещё раз:"
+ask_task_hours = "Сколько часов вы потратили на эту задачу? (например: 1.5 или 2)"
+invalid_hours_number = "Введите число, например 0.5 или 2:"
+invalid_hours_range = "Укажите корректное время от 0.1 до 24 часов:"
+task_saved = "✅ Сохранено: «{title}» — {hours:g} ч."
+change_email_current = "Текущий адрес: {email}\nВведите новый Email:"
+change_email_new = "Введите Email, который нужно сохранить для отчётов:"
+send_email_not_saved = "Email ещё не сохранён. Введите адрес, на который отправить отчёт:"
+sending_report = "Отправляю отчёт на {email}..."
+send_email_failed = "Не удалось отправить письмо. Проверьте настройки SMTP в .env."
+send_email_success = "📨 Итог за сегодня отправлен на {email}."
+invalid_email_format = "Некорректный формат Email. Попробуйте ещё раз:"
+email_saved = "✅ Email {email} сохранён."
+email_saved_and_sending = "Email сохранён. Отправляю отчёт на {email}..."
+email_saved_but_send_failed = "Email сохранён, но не удалось отправить письмо. Проверьте настройки SMTP в .env."
+ask_lead_description = "Опишите задачу для вашего бизнеса, вставьте текст вакансии или ссылку:"
+empty_lead_description = "Описание не может быть пустым. Попробуйте ещё раз:"
+ask_lead_budget = "Укажите планируемый бюджет или вилку оплаты в USD:"
+empty_lead_budget = "Укажите бюджет или оплату в USD:"
+zero_lead_budget = "Бюджет должен быть больше нуля. Укажите сумму в USD:"
+lead_saved_email_failed = "Заявка сохранена в базе, но не удалось отправить уведомление на почту."
+lead_accepted = """✅ Спасибо! Заявка принята.
+Бюджет: {budget} USD
+Контакт для связи: {contact}"""
+ask_lead_contact = """У вас не задан @username в Telegram и не сохранён Email.
+Укажите контакт для связи (Email или телефон):"""
+empty_lead_contact = "Контакт не может быть пустым. Введите Email или телефон:"
+
+[reports]
+daily_header = "Итог за {date}"
+daily_total_hours = "Всего потрачено: {total_hours:g} ч."
+daily_tasks_title = "Выполненные задачи:"
+daily_no_tasks = "— Задач за сегодня пока нет."
+daily_task_item = "{index}. {title} — {hours:g} ч."
+weather_info = "🌤 Погода ({city}): {temperature:+.1f}°C, ветер {wind_speed:.1f} км/ч"
+weather_unavailable = "🌤 Погода: данные временно недоступны"
+currency_info = "💵 Курс {code} (НБРБ): {rate:.4f} BYN"
+currency_unavailable = "💵 Курс USD (НБРБ): данные временно недоступны"
+rest_api_showcase = "💪 Да, бот умеет вызывать REST API"
+
+[emails]
+daily_report_subject = "Отчёт по задачам за {date}"
+lead_subject = "Новая заявка: проект под бизнес (${budget})"
+lead_body = """Новая заявка из Telegram-бота WorkTrack
+Дата (UTC): {created_at}
+Telegram: {username} (ID: {user_id})
+Контакт для связи: {contact}
+Оплата / бюджет (USD): {budget}
+
+Описание / вакансия / ссылка:
+{description}"""

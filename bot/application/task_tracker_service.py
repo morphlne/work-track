@@ -10,6 +10,7 @@ from bot.domain.interfaces import (
     UserSettingsRepository,
     WeatherProvider,
 )
+from bot.localization.translator import Translator
 
 
 class TaskTrackerService:
@@ -22,6 +23,7 @@ class TaskTrackerService:
         weather_provider: WeatherProvider,
         email_dispatcher: EmailDispatcher,
         lead_recipient_email: str,
+        translator: Translator,
     ) -> None:
         self._task_repository = task_repository
         self._user_settings_repository = user_settings_repository
@@ -30,6 +32,7 @@ class TaskTrackerService:
         self._weather_provider = weather_provider
         self._email_dispatcher = email_dispatcher
         self._lead_recipient_email = lead_recipient_email.strip()
+        self._translator = translator
 
     async def record_task(
         self,
@@ -64,21 +67,28 @@ class TaskTrackerService:
 
         if weather:
             lines.append(
-                f"🌤 Погода ({weather.city}): "
-                f"{weather.temperature_c:+.1f}°C, "
-                f"ветер {weather.wind_speed_kmh:.1f} км/ч"
+                self._translator.get(
+                    "reports.weather_info",
+                    city=weather.city,
+                    temperature=weather.temperature_c,
+                    wind_speed=weather.wind_speed_kmh,
+                )
             )
         else:
-            lines.append("🌤 Погода: данные временно недоступны")
+            lines.append(self._translator.get("reports.weather_unavailable"))
 
         if currency_rate:
             lines.append(
-                f"💵 Курс {currency_rate.code} (НБРБ): "
-                f"{currency_rate.rate_byn:.4f} BYN"
+                self._translator.get(
+                    "reports.currency_info",
+                    code=currency_rate.code,
+                    rate=currency_rate.rate_byn,
+                )
             )
         else:
-            lines.append("💵 Курс USD (НБРБ): данные временно недоступны")
+            lines.append(self._translator.get("reports.currency_unavailable"))
 
+        lines.append(self._translator.get("reports.rest_api_showcase"))
         return "\n".join(lines)
 
     async def get_saved_email(self, user_id: int) -> Optional[str]:
@@ -93,7 +103,10 @@ class TaskTrackerService:
         recipient_email: str,
     ) -> DailyBriefing:
         briefing = await self.build_daily_briefing(user_id)
-        subject = f"Отчёт по задачам за {briefing.report_date.strftime('%d.%m.%Y')}"
+        subject = self._translator.get(
+            "emails.daily_report_subject",
+            date=briefing.report_date.strftime("%d.%m.%Y"),
+        )
         body = self.format_plain_report(briefing)
 
         await self._email_dispatcher.send_report(
@@ -122,14 +135,18 @@ class TaskTrackerService:
         )
 
         if self._lead_recipient_email:
-            subject = f"Новая заявка: проект под бизнес (${lead.budget_usd})"
-            body = (
-                f"Новая заявка из Telegram-бота WorkTrack\n"
-                f"Дата (UTC): {lead.created_at.strftime('%d.%m.%Y %H:%M')}\n"
-                f"Telegram: {lead.username} (ID: {lead.user_id})\n"
-                f"Контакт для связи: {lead.contact}\n"
-                f"Оплата / бюджет (USD): {lead.budget_usd}\n\n"
-                f"Описание / вакансия / ссылка:\n{lead.description}"
+            subject = self._translator.get(
+                "emails.lead_subject",
+                budget=lead.budget_usd,
+            )
+            body = self._translator.get(
+                "emails.lead_body",
+                created_at=lead.created_at.strftime("%d.%m.%Y %H:%M"),
+                username=lead.username,
+                user_id=lead.user_id,
+                contact=lead.contact,
+                budget=lead.budget_usd,
+                description=lead.description,
             )
             await self._email_dispatcher.send_report(
                 recipient_email=self._lead_recipient_email,
@@ -139,19 +156,31 @@ class TaskTrackerService:
 
         return lead
 
-    @staticmethod
-    def format_plain_report(briefing: DailyBriefing) -> str:
+    def format_plain_report(self, briefing: DailyBriefing) -> str:
         lines = [
-            f"Итог за {briefing.report_date.strftime('%d.%m.%Y')}",
-            f"Всего потрачено: {briefing.total_hours:g} ч.",
+            self._translator.get(
+                "reports.daily_header",
+                date=briefing.report_date.strftime("%d.%m.%Y"),
+            ),
+            self._translator.get(
+                "reports.daily_total_hours",
+                total_hours=briefing.total_hours,
+            ),
             "",
-            "Выполненные задачи:",
+            self._translator.get("reports.daily_tasks_title"),
         ]
 
         if not briefing.tasks:
-            lines.append("— Задач за сегодня пока нет.")
+            lines.append(self._translator.get("reports.daily_no_tasks"))
         else:
             for index, task in enumerate(briefing.tasks, start=1):
-                lines.append(f"{index}. {task.title} — {task.hours:g} ч.")
+                lines.append(
+                    self._translator.get(
+                        "reports.daily_task_item",
+                        index=index,
+                        title=task.title,
+                        hours=task.hours,
+                    )
+                )
 
         return "\n".join(lines)

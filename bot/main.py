@@ -1,5 +1,6 @@
 import asyncio
 import logging
+from pathlib import Path
 
 import aiohttp
 from aiogram import Bot, Dispatcher
@@ -16,6 +17,7 @@ from bot.infrastructure.database.sqlite_user_settings_repository import (
 from bot.infrastructure.external_api.nbrb_currency_client import NbrbCurrencyClient
 from bot.infrastructure.external_api.open_meteo_client import OpenMeteoClient
 from bot.infrastructure.mail.smtp_dispatcher import SmtpEmailDispatcher
+from bot.localization.translator import Translator
 from bot.presentation.handlers.tracker_handlers import build_tracker_router
 
 
@@ -26,6 +28,11 @@ async def run_bot() -> None:
     )
 
     settings = load_settings()
+
+    translator = Translator(
+        locales_dir=Path(__file__).resolve().parent / "locales",
+        default_locale=settings.default_locale,
+    )
 
     connection_manager = SQLiteConnectionManager(settings.database_path)
     task_repository = SQLiteTaskRepository(connection_manager)
@@ -68,11 +75,12 @@ async def run_bot() -> None:
             weather_provider=weather_client,
             email_dispatcher=email_dispatcher,
             lead_recipient_email=settings.lead_recipient_email,
+            translator=translator,
         )
 
         bot = Bot(token=settings.bot_token)
         dispatcher = Dispatcher()
-        dispatcher.include_router(build_tracker_router(tracker_service))
+        dispatcher.include_router(build_tracker_router(tracker_service, translator))
 
         await dispatcher.start_polling(bot)
 

@@ -1,34 +1,28 @@
 from aiogram.types import KeyboardButton, ReplyKeyboardMarkup
 
-ADD_TASK_BUTTON = "➕ Добавить задачу"
-TODAY_SUMMARY_BUTTON = "📊 Итог за сегодня"
-WEATHER_CURRENCY_BUTTON = "🌤 Погода и курс"
-SEND_EMAIL_BUTTON = "📧 Отправить итог на Email"
-CHANGE_EMAIL_BUTTON = "✉️ Изменить Email"
-BUSINESS_PROJECT_BUTTON = "🚀 Проект под ваш бизнес"
-CANCEL_BUTTON = "❌ Отмена"
+from bot.localization.translator import Translator
 
 
-def build_main_menu_keyboard() -> ReplyKeyboardMarkup:
+def build_main_menu_keyboard(translator: Translator) -> ReplyKeyboardMarkup:
     return ReplyKeyboardMarkup(
         keyboard=[
-            [KeyboardButton(text=ADD_TASK_BUTTON)],
+            [KeyboardButton(text=translator.get("buttons.add_task"))],
             [
-                KeyboardButton(text=TODAY_SUMMARY_BUTTON),
-                KeyboardButton(text=WEATHER_CURRENCY_BUTTON),
+                KeyboardButton(text=translator.get("buttons.today_summary")),
+                KeyboardButton(text=translator.get("buttons.weather_currency")),
             ],
             [
-                KeyboardButton(text=SEND_EMAIL_BUTTON),
-                KeyboardButton(text=CHANGE_EMAIL_BUTTON),
+                KeyboardButton(text=translator.get("buttons.send_email")),
+                KeyboardButton(text=translator.get("buttons.change_email")),
             ],
-            [KeyboardButton(text=BUSINESS_PROJECT_BUTTON)],
+            [KeyboardButton(text=translator.get("buttons.business_project"))],
         ],
         resize_keyboard=True,
     )
 
 
-def build_cancel_keyboard() -> ReplyKeyboardMarkup:
+def build_cancel_keyboard(translator: Translator) -> ReplyKeyboardMarkup:
     return ReplyKeyboardMarkup(
-        keyboard=[[KeyboardButton(text=CANCEL_BUTTON)]],
+        keyboard=[[KeyboardButton(text=translator.get("buttons.cancel"))]],
         resize_keyboard=True,
     )
