@@ -17,6 +17,7 @@ from bot.infrastructure.database.sqlite_user_settings_repository import (
 from bot.infrastructure.external_api.nbrb_currency_client import NbrbCurrencyClient
 from bot.infrastructure.external_api.open_meteo_client import OpenMeteoClient
 from bot.infrastructure.mail.smtp_dispatcher import SmtpEmailDispatcher
+from bot.infrastructure.web.healthcheck_server import HealthcheckServer
 from bot.localization.translator import Translator
 from bot.presentation.handlers.tracker_handlers import build_tracker_router
 
@@ -82,7 +83,8 @@ async def run_bot() -> None:
         dispatcher = Dispatcher()
         dispatcher.include_router(build_tracker_router(tracker_service, translator))
 
-        await dispatcher.start_polling(bot)
+        async with HealthcheckServer(port=settings.healthcheck_port):
+            await dispatcher.start_polling(bot)
 
 
 def main() -> None:

@@ -1,3 +1,4 @@
+from pydantic import AliasChoices, Field
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -9,6 +10,10 @@ class Settings(BaseSettings):
     default_longitude: float = 27.5590
     default_city_name: str = "Минск"
     default_locale: str = "ru"
+    healthcheck_port: int = Field(
+        default=10000,
+        validation_alias=AliasChoices("PORT", "HEALTHCHECK_PORT"),
+    )
 
     smtp_host: str = "smtp.gmail.com"
     smtp_port: int = 465
