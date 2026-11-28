@@ -110,7 +110,7 @@ def build_tracker_router(
             translator.get(
                 "messages.task_saved",
                 title=entry.title,
-                hours=entry.hours,
+                duration=tracker_service.format_duration(entry.hours),
             ),
             reply_markup=build_main_menu_keyboard(translator),
         )

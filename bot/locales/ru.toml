@@ -26,7 +26,7 @@ empty_task_title = "Название не может быть пустым. По
 select_time_placeholder = "Кнопка или число от 1 до 8"
 ask_task_hours = "Сколько времени ушло на задачу? Выберите кнопку или введите целое число часов (от 1 до 8):"
 invalid_hours_choice = "Выберите вариант на кнопках или введите целое число часов от 1 до 8:"
-task_saved = "✅ Сохранено: «{title}» — {hours:g} ч."
+task_saved = "✅ Сохранено: «{title}» — {duration}"
 change_email_current = "Текущий адрес: {email}\nВведите новый Email:"
 change_email_new = "Введите Email, который нужно сохранить для отчётов:"
 send_email_not_saved = "Email ещё не сохранён. Введите адрес, на который отправить отчёт:"
@@ -52,15 +52,19 @@ empty_lead_contact = "Контакт не может быть пустым. Вв
 
 [reports]
 daily_header = "Итог за {date}"
-daily_total_hours = "Всего потрачено: {total_hours:g} ч."
+daily_total_hours = "Всего потрачено: {total_duration}"
 daily_tasks_title = "Выполненные задачи:"
 daily_no_tasks = "— Задач за сегодня пока нет."
-daily_task_item = "{index}. {title} — {hours:g} ч."
+daily_task_item = "{index}. {title} — {duration}"
 weather_info = "🌤 Погода ({city}): {temperature:+.1f}°C, ветер {wind_speed:.1f} км/ч"
 weather_unavailable = "🌤 Погода: данные временно недоступны"
 currency_info = "💵 Курс {code} (НБРБ): {rate:.4f} BYN"
 currency_unavailable = "💵 Курс USD (НБРБ): данные временно недоступны"
 rest_api_showcase = "💪 Да, бот умеет вызывать REST API"
+
+duration_hours_minutes = "{hours} ч. {minutes} мин"
+duration_hours = "{hours} ч."
+duration_minutes = "{minutes} мин"
 
 [emails]
 daily_report_subject = "Отчёт по задачам за {date}"

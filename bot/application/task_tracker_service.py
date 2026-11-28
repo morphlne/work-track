@@ -156,6 +156,25 @@ class TaskTrackerService:
 
         return lead
 
+    def format_duration(self, hours: float) -> str:
+        total_minutes = round(hours * 60)
+        whole_hours, minutes = divmod(total_minutes, 60)
+        if whole_hours > 0 and minutes > 0:
+            return self._translator.get(
+                "reports.duration_hours_minutes",
+                hours=whole_hours,
+                minutes=minutes,
+            )
+        if whole_hours > 0:
+            return self._translator.get(
+                "reports.duration_hours",
+                hours=whole_hours,
+            )
+        return self._translator.get(
+            "reports.duration_minutes",
+            minutes=minutes,
+        )
+
     def format_plain_report(self, briefing: DailyBriefing) -> str:
         lines = [
             self._translator.get(
@@ -164,7 +183,7 @@ class TaskTrackerService:
             ),
             self._translator.get(
                 "reports.daily_total_hours",
-                total_hours=briefing.total_hours,
+                total_duration=self.format_duration(briefing.total_hours),
             ),
             "",
             self._translator.get("reports.daily_tasks_title"),
@@ -179,7 +198,7 @@ class TaskTrackerService:
                         "reports.daily_task_item",
                         index=index,
                         title=task.title,
-                        hours=task.hours,
+                        duration=self.format_duration(task.hours),
                     )
                 )
 
