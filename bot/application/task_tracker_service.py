@@ -68,7 +68,7 @@ class TaskTrackerService:
     ) -> list[TaskEntry]:
         today = datetime.now(timezone.utc).date()
         tasks = await self._task_repository.get_tasks_for_date(user_id, today)
-        sorted_tasks = sorted(tasks, key=lambda t: t.created_at, reverse=True)
+        sorted_tasks = sorted(tasks, key=lambda t: t.updated_at, reverse=True)
         return sorted_tasks[:limit]
 
     async def build_market_weather_info(self) -> str:

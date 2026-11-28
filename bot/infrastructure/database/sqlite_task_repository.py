@@ -17,10 +17,19 @@ class SQLiteTaskRepository:
                     user_id INTEGER NOT NULL,
                     title TEXT NOT NULL,
                     hours REAL NOT NULL,
-                    created_at TEXT NOT NULL
+                    created_at TEXT NOT NULL,
+                    updated_at TEXT NOT NULL
                 )
                 """
             )
+            cursor = await db.execute("PRAGMA table_info(tasks)")
+            columns = [row[1] for row in await cursor.fetchall()]
+            if "updated_at" not in columns:
+                await db.execute("ALTER TABLE tasks ADD COLUMN updated_at TEXT")
+                await db.execute(
+                    "UPDATE tasks SET updated_at = created_at WHERE updated_at IS NULL"
+                )
+
             await db.execute(
                 "CREATE INDEX IF NOT EXISTS idx_tasks_user_date ON tasks (user_id, created_at)"
             )
@@ -34,21 +43,21 @@ class SQLiteTaskRepository:
         created_at: datetime,
         task_id: int | None = None,
     ) -> TaskEntry:
-        created_iso = created_at.isoformat()
+        now_iso = created_at.isoformat()
         clean_title = title.strip()
 
         async with self._connection_manager.connect() as db:
             if task_id is not None:
                 cursor = await db.execute(
-                    "SELECT id, title, hours FROM tasks WHERE id = ? AND user_id = ?",
+                    "SELECT id, title, hours, created_at FROM tasks WHERE id = ? AND user_id = ?",
                     (task_id, user_id),
                 )
                 row = await cursor.fetchone()
                 if row is not None:
                     updated_hours = round(float(row[2]) + hours, 2)
                     await db.execute(
-                        "UPDATE tasks SET hours = ?, created_at = ? WHERE id = ?",
-                        (updated_hours, created_iso, task_id),
+                        "UPDATE tasks SET hours = ?, updated_at = ? WHERE id = ?",
+                        (updated_hours, now_iso, task_id),
                     )
                     await db.commit()
                     return TaskEntry(
@@ -56,15 +65,16 @@ class SQLiteTaskRepository:
                         user_id=user_id,
                         title=row[1],
                         hours=updated_hours,
-                        created_at=created_at,
+                        created_at=datetime.fromisoformat(row[3]),
+                        updated_at=created_at,
                     )
 
             cursor = await db.execute(
                 """
-                INSERT INTO tasks (user_id, title, hours, created_at)
-                VALUES (?, ?, ?, ?)
+                INSERT INTO tasks (user_id, title, hours, created_at, updated_at)
+                VALUES (?, ?, ?, ?, ?)
                 """,
-                (user_id, clean_title, hours, created_iso),
+                (user_id, clean_title, hours, now_iso, now_iso),
             )
             await db.commit()
             new_id = cursor.lastrowid or 0
@@ -75,6 +85,7 @@ class SQLiteTaskRepository:
             title=clean_title,
             hours=hours,
             created_at=created_at,
+            updated_at=created_at,
         )
 
     async def get_tasks_for_date(
@@ -86,7 +97,7 @@ class SQLiteTaskRepository:
         async with self._connection_manager.connect() as db:
             cursor = await db.execute(
                 """
-                SELECT id, user_id, title, hours, created_at
+                SELECT id, user_id, title, hours, created_at, updated_at
                 FROM tasks
                 WHERE user_id = ? AND created_at LIKE ?
                 ORDER BY id ASC
@@ -102,6 +113,7 @@ class SQLiteTaskRepository:
                 title=row[2],
                 hours=row[3],
                 created_at=datetime.fromisoformat(row[4]),
+                updated_at=datetime.fromisoformat(row[5] or row[4]),
             )
             for row in rows
         ]

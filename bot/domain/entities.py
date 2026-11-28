@@ -9,6 +9,7 @@ class TaskEntry:
     title: str
     hours: float
     created_at: datetime
+    updated_at: datetime
 
 
 @dataclass(frozen=True)
