@@ -32,23 +32,47 @@ class SQLiteTaskRepository:
         title: str,
         hours: float,
         created_at: datetime,
+        task_id: int | None = None,
     ) -> TaskEntry:
         created_iso = created_at.isoformat()
+        clean_title = title.strip()
+
         async with self._connection_manager.connect() as db:
+            if task_id is not None:
+                cursor = await db.execute(
+                    "SELECT id, title, hours FROM tasks WHERE id = ? AND user_id = ?",
+                    (task_id, user_id),
+                )
+                row = await cursor.fetchone()
+                if row is not None:
+                    updated_hours = round(float(row[2]) + hours, 2)
+                    await db.execute(
+                        "UPDATE tasks SET hours = ?, created_at = ? WHERE id = ?",
+                        (updated_hours, created_iso, task_id),
+                    )
+                    await db.commit()
+                    return TaskEntry(
+                        id=row[0],
+                        user_id=user_id,
+                        title=row[1],
+                        hours=updated_hours,
+                        created_at=created_at,
+                    )
+
             cursor = await db.execute(
                 """
                 INSERT INTO tasks (user_id, title, hours, created_at)
                 VALUES (?, ?, ?, ?)
                 """,
-                (user_id, title, hours, created_iso),
+                (user_id, clean_title, hours, created_iso),
             )
             await db.commit()
-            task_id = cursor.lastrowid or 0
+            new_id = cursor.lastrowid or 0
 
         return TaskEntry(
-            id=task_id,
+            id=new_id,
             user_id=user_id,
-            title=title,
+            title=clean_title,
             hours=hours,
             created_at=created_at,
         )

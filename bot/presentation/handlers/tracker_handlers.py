@@ -12,6 +12,7 @@ from bot.presentation.keyboards.main_menu import (
     build_cancel_keyboard,
     build_main_menu_keyboard,
     build_task_duration_keyboard,
+    build_task_title_keyboard,
 )
 from bot.presentation.states.tracker_states import (
     EmailInputState,
@@ -47,10 +48,27 @@ def build_tracker_router(
 
     @router.message(F.text == translator.get("buttons.add_task"))
     async def handle_add_task_start(message: Message, state: FSMContext) -> None:
+        recent_tasks = await tracker_service.get_recent_today_tasks(
+            user_id=message.from_user.id,
+            limit=7,
+        )
+        recent_map = {
+            task.title: {"id": task.id, "hours": task.hours}
+            for task in recent_tasks
+        }
+        recent_titles = [task.title for task in recent_tasks]
+
         await state.set_state(TaskInputState.waiting_for_title)
+        await state.update_data(recent_tasks=recent_map)
+
+        prompt_key = (
+            "messages.ask_task_title_or_select"
+            if recent_titles
+            else "messages.ask_task_title"
+        )
         await message.answer(
-            translator.get("messages.ask_task_title"),
-            reply_markup=build_cancel_keyboard(translator),
+            translator.get(prompt_key),
+            reply_markup=build_task_title_keyboard(translator, recent_titles),
         )
 
     @router.message(TaskInputState.waiting_for_title)
@@ -60,10 +78,26 @@ def build_tracker_router(
             await message.answer(translator.get("messages.empty_task_title"))
             return
 
-        await state.update_data(task_title=title)
+        data = await state.get_data()
+        recent_map: dict = data.get("recent_tasks", {})
+        matched = recent_map.get(title)
+
+        task_id = matched["id"] if matched else None
+        existing_hours = matched["hours"] if matched else 0.0
+
+        await state.update_data(task_title=title, task_id=task_id)
         await state.set_state(TaskInputState.waiting_for_hours)
+
+        if existing_hours > 0:
+            prompt = translator.get(
+                "messages.ask_additional_task_hours",
+                existing_duration=tracker_service.format_duration(existing_hours),
+            )
+        else:
+            prompt = translator.get("messages.ask_task_hours")
+
         await message.answer(
-            translator.get("messages.ask_task_hours"),
+            prompt,
             reply_markup=build_task_duration_keyboard(translator),
         )
 
@@ -99,10 +133,12 @@ def build_tracker_router(
 
         data = await state.get_data()
         task_title = data["task_title"]
+        task_id = data.get("task_id")
         entry = await tracker_service.record_task(
             user_id=message.from_user.id,
             title=task_title,
             hours=hours,
+            task_id=task_id,
         )
 
         await state.clear()

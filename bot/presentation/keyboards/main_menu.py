@@ -55,3 +55,19 @@ def build_task_duration_keyboard(translator: Translator) -> ReplyKeyboardMarkup:
         resize_keyboard=True,
         input_field_placeholder=translator.get("messages.select_time_placeholder"),
     )
+
+
+def build_task_title_keyboard(
+    translator: Translator,
+    recent_titles: list[str],
+) -> ReplyKeyboardMarkup:
+    buttons = [KeyboardButton(text=title) for title in recent_titles[:7]]
+    buttons.append(KeyboardButton(text=translator.get("buttons.cancel")))
+
+    rows = [buttons[i : i + 2] for i in range(0, len(buttons), 2)]
+
+    return ReplyKeyboardMarkup(
+        keyboard=rows,
+        resize_keyboard=True,
+        input_field_placeholder=translator.get("messages.select_or_type_task_placeholder"),
+    )

@@ -39,6 +39,7 @@ class TaskTrackerService:
         user_id: int,
         title: str,
         hours: float,
+        task_id: int | None = None,
     ) -> TaskEntry:
         now = datetime.now(timezone.utc)
         return await self._task_repository.add_task(
@@ -46,6 +47,7 @@ class TaskTrackerService:
             title=title.strip(),
             hours=round(hours, 2),
             created_at=now,
+            task_id=task_id,
         )
 
     async def build_daily_briefing(self, user_id: int) -> DailyBriefing:
@@ -58,6 +60,16 @@ class TaskTrackerService:
             tasks=tasks,
             total_hours=total_hours,
         )
+
+    async def get_recent_today_tasks(
+        self,
+        user_id: int,
+        limit: int = 7,
+    ) -> list[TaskEntry]:
+        today = datetime.now(timezone.utc).date()
+        tasks = await self._task_repository.get_tasks_for_date(user_id, today)
+        sorted_tasks = sorted(tasks, key=lambda t: t.created_at, reverse=True)
+        return sorted_tasks[:limit]
 
     async def build_market_weather_info(self) -> str:
         weather = await self._weather_provider.get_current_weather()

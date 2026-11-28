@@ -13,6 +13,7 @@ class TaskRepository(Protocol):
         title: str,
         hours: float,
         created_at: datetime,
+        task_id: int | None = None,
     ) -> TaskEntry: ...
 
     async def get_tasks_for_date(
