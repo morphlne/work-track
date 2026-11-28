@@ -18,7 +18,7 @@ from bot.infrastructure.external_api.nbrb_currency_client import NbrbCurrencyCli
 from bot.infrastructure.external_api.open_meteo_client import OpenMeteoClient
 from bot.infrastructure.mail.gas_dispatcher import GoogleAppsScriptEmailDispatcher
 from bot.infrastructure.mail.smtp_dispatcher import SmtpEmailDispatcher
-from bot.infrastructure.web.healthcheck_server import HealthcheckServer
+from bot.infrastructure.api.healthcheck_server import HealthcheckServer
 from bot.localization.translator import Translator
 from bot.presentation.handlers.tracker_handlers import build_tracker_router
 
