@@ -7,7 +7,7 @@ from bot.domain.interfaces import (
     EmailDispatcher,
     LeadRepository,
     TaskRepository,
-    UserSettingsRepository,
+    UserRepository,
     WeatherProvider,
 )
 from bot.localization.translator import Translator
@@ -17,7 +17,7 @@ class TaskTrackerService:
     def __init__(
         self,
         task_repository: TaskRepository,
-        user_settings_repository: UserSettingsRepository,
+        user_repository: UserRepository,
         lead_repository: LeadRepository,
         currency_provider: CurrencyProvider,
         weather_provider: WeatherProvider,
@@ -26,7 +26,7 @@ class TaskTrackerService:
         translator: Translator,
     ) -> None:
         self._task_repository = task_repository
-        self._user_settings_repository = user_settings_repository
+        self._user_repository = user_repository
         self._lead_repository = lead_repository
         self._currency_provider = currency_provider
         self._weather_provider = weather_provider
@@ -36,23 +36,23 @@ class TaskTrackerService:
 
     async def record_task(
         self,
-        user_id: int,
+        tg_user_id: int,
         title: str,
         hours: float,
         task_id: int | None = None,
     ) -> TaskEntry:
         now = datetime.now(timezone.utc)
         return await self._task_repository.add_task(
-            user_id=user_id,
+            tg_user_id=tg_user_id,
             title=title.strip(),
             hours=round(hours, 2),
             created_at=now,
             task_id=task_id,
         )
 
-    async def build_daily_briefing(self, user_id: int) -> DailyBriefing:
+    async def build_daily_briefing(self, tg_user_id: int) -> DailyBriefing:
         today = datetime.now(timezone.utc).date()
-        tasks = await self._task_repository.get_tasks_for_date(user_id, today)
+        tasks = await self._task_repository.get_tasks_for_date(tg_user_id, today)
         total_hours = round(sum(task.hours for task in tasks), 2)
 
         return DailyBriefing(
@@ -63,11 +63,11 @@ class TaskTrackerService:
 
     async def get_recent_today_tasks(
         self,
-        user_id: int,
+        tg_user_id: int,
         limit: int = 7,
     ) -> list[TaskEntry]:
         today = datetime.now(timezone.utc).date()
-        tasks = await self._task_repository.get_tasks_for_date(user_id, today)
+        tasks = await self._task_repository.get_tasks_for_date(tg_user_id, today)
         sorted_tasks = sorted(tasks, key=lambda t: t.updated_at, reverse=True)
         return sorted_tasks[:limit]
 
@@ -103,18 +103,21 @@ class TaskTrackerService:
         lines.append(self._translator.get("reports.rest_api_showcase"))
         return "\n".join(lines)
 
-    async def get_saved_email(self, user_id: int) -> Optional[str]:
-        return await self._user_settings_repository.get_email(user_id)
+    async def get_saved_email(self, tg_user_id: int) -> Optional[str]:
+        return await self._user_repository.get_email(tg_user_id)
 
-    async def save_user_email(self, user_id: int, email: str) -> None:
-        await self._user_settings_repository.save_email(user_id, email.strip())
+    async def register_user(self, tg_user_id: int, name: str, username: Optional[str] = None) -> None:
+        await self._user_repository.upsert_user(tg_user_id, name, username)
+
+    async def save_user_email(self, tg_user_id: int, email: str) -> None:
+        await self._user_repository.save_email(tg_user_id, email.strip())
 
     async def send_daily_report_to_email(
         self,
-        user_id: int,
+        tg_user_id: int,
         recipient_email: str,
     ) -> DailyBriefing:
-        briefing = await self.build_daily_briefing(user_id)
+        briefing = await self.build_daily_briefing(tg_user_id)
         subject = self._translator.get(
             "emails.daily_report_subject",
             date=briefing.report_date.strftime("%d.%m.%Y"),
@@ -130,16 +133,14 @@ class TaskTrackerService:
 
     async def submit_lead_request(
         self,
-        user_id: int,
-        username: str,
+        tg_user_id: int,
         description: str,
         budget_usd: str,
         contact: str,
     ) -> LeadRequest:
         now = datetime.now(timezone.utc)
         lead = await self._lead_repository.add_lead(
-            user_id=user_id,
-            username=username,
+            tg_user_id=tg_user_id,
             description=description.strip(),
             budget_usd=budget_usd.strip(),
             contact=contact.strip(),
@@ -154,8 +155,7 @@ class TaskTrackerService:
             body = self._translator.get(
                 "emails.lead_body",
                 created_at=lead.created_at.strftime("%d.%m.%Y %H:%M"),
-                username=lead.username,
-                user_id=lead.user_id,
+                    tg_user_id=lead.tg_user_id,
                 contact=lead.contact,
                 budget=lead.budget_usd,
                 description=lead.description,

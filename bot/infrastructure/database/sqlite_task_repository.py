@@ -14,7 +14,7 @@ class SQLiteTaskRepository:
                 """
                 CREATE TABLE IF NOT EXISTS tasks (
                     id INTEGER PRIMARY KEY AUTOINCREMENT,
-                    user_id INTEGER NOT NULL,
+                    tg_user_id INTEGER NOT NULL,
                     title TEXT NOT NULL,
                     hours REAL NOT NULL,
                     created_at TEXT NOT NULL,
@@ -22,22 +22,14 @@ class SQLiteTaskRepository:
                 )
                 """
             )
-            cursor = await db.execute("PRAGMA table_info(tasks)")
-            columns = [row[1] for row in await cursor.fetchall()]
-            if "updated_at" not in columns:
-                await db.execute("ALTER TABLE tasks ADD COLUMN updated_at TEXT")
-                await db.execute(
-                    "UPDATE tasks SET updated_at = created_at WHERE updated_at IS NULL"
-                )
-
             await db.execute(
-                "CREATE INDEX IF NOT EXISTS idx_tasks_user_date ON tasks (user_id, created_at)"
+                "CREATE INDEX IF NOT EXISTS idx_tasks_user_date ON tasks (tg_user_id, created_at)"
             )
             await db.commit()
 
     async def add_task(
         self,
-        user_id: int,
+        tg_user_id: int,
         title: str,
         hours: float,
         created_at: datetime,
@@ -49,8 +41,8 @@ class SQLiteTaskRepository:
         async with self._connection_manager.connect() as db:
             if task_id is not None:
                 cursor = await db.execute(
-                    "SELECT id, title, hours, created_at FROM tasks WHERE id = ? AND user_id = ?",
-                    (task_id, user_id),
+                    "SELECT id, title, hours, created_at FROM tasks WHERE id = ? AND tg_user_id = ?",
+                    (task_id, tg_user_id),
                 )
                 row = await cursor.fetchone()
                 if row is not None:
@@ -62,7 +54,7 @@ class SQLiteTaskRepository:
                     await db.commit()
                     return TaskEntry(
                         id=row[0],
-                        user_id=user_id,
+                        tg_user_id=tg_user_id,
                         title=row[1],
                         hours=updated_hours,
                         created_at=datetime.fromisoformat(row[3]),
@@ -71,17 +63,17 @@ class SQLiteTaskRepository:
 
             cursor = await db.execute(
                 """
-                INSERT INTO tasks (user_id, title, hours, created_at, updated_at)
+                INSERT INTO tasks (tg_user_id, title, hours, created_at, updated_at)
                 VALUES (?, ?, ?, ?, ?)
                 """,
-                (user_id, clean_title, hours, now_iso, now_iso),
+                (tg_user_id, clean_title, hours, now_iso, now_iso),
             )
             await db.commit()
             new_id = cursor.lastrowid or 0
 
         return TaskEntry(
             id=new_id,
-            user_id=user_id,
+            tg_user_id=tg_user_id,
             title=clean_title,
             hours=hours,
             created_at=created_at,
@@ -90,26 +82,26 @@ class SQLiteTaskRepository:
 
     async def get_tasks_for_date(
         self,
-        user_id: int,
+        tg_user_id: int,
         target_date: date,
     ) -> list[TaskEntry]:
         date_prefix = f"{target_date.isoformat()}%"
         async with self._connection_manager.connect() as db:
             cursor = await db.execute(
                 """
-                SELECT id, user_id, title, hours, created_at, updated_at
+                SELECT id, tg_user_id, title, hours, created_at, updated_at
                 FROM tasks
-                WHERE user_id = ? AND created_at LIKE ?
+                WHERE tg_user_id = ? AND created_at LIKE ?
                 ORDER BY id ASC
                 """,
-                (user_id, date_prefix),
+                (tg_user_id, date_prefix),
             )
             rows = await cursor.fetchall()
 
         return [
             TaskEntry(
                 id=row[0],
-                user_id=row[1],
+                tg_user_id=row[1],
                 title=row[2],
                 hours=row[3],
                 created_at=datetime.fromisoformat(row[4]),

@@ -12,10 +12,9 @@ class SQLiteLeadRepository:
         async with self._connection_manager.connect() as db:
             await db.execute(
                 """
-                CREATE TABLE IF NOT EXISTS lead_requests (
+                CREATE TABLE IF NOT EXISTS leads (
                     id INTEGER PRIMARY KEY AUTOINCREMENT,
-                    user_id INTEGER NOT NULL,
-                    username TEXT NOT NULL,
+                    tg_user_id INTEGER NOT NULL,
                     description TEXT NOT NULL,
                     budget_usd TEXT NOT NULL,
                     contact TEXT NOT NULL,
@@ -27,8 +26,7 @@ class SQLiteLeadRepository:
 
     async def add_lead(
         self,
-        user_id: int,
-        username: str,
+        tg_user_id: int,
         description: str,
         budget_usd: str,
         contact: str,
@@ -38,25 +36,23 @@ class SQLiteLeadRepository:
         async with self._connection_manager.connect() as db:
             cursor = await db.execute(
                 """
-                INSERT INTO lead_requests (
-                    user_id,
-                    username,
+                INSERT INTO leads (
+                    tg_user_id,
                     description,
                     budget_usd,
                     contact,
                     created_at
                 )
-                VALUES (?, ?, ?, ?, ?, ?)
+                VALUES (?, ?, ?, ?, ?)
                 """,
-                (user_id, username, description, budget_usd, contact, created_at_iso),
+                (tg_user_id, description, budget_usd, contact, created_at_iso),
             )
             await db.commit()
             lead_id = cursor.lastrowid
 
         return LeadRequest(
             id=lead_id or 0,
-            user_id=user_id,
-            username=username,
+            tg_user_id=tg_user_id,
             description=description,
             budget_usd=budget_usd,
             contact=contact,

@@ -9,7 +9,7 @@ class TaskRepository(Protocol):
 
     async def add_task(
         self,
-        user_id: int,
+        tg_user_id: int,
         title: str,
         hours: float,
         created_at: datetime,
@@ -18,17 +18,20 @@ class TaskRepository(Protocol):
 
     async def get_tasks_for_date(
         self,
-        user_id: int,
+        tg_user_id: int,
         target_date: date,
     ) -> list[TaskEntry]: ...
 
 
-class UserSettingsRepository(Protocol):
+class UserRepository(Protocol):
+    async def upsert_user(self, tg_user_id: int, name: str, username: Optional[str] = None) -> None:
+        ...
+
     async def initialize(self) -> None: ...
 
-    async def get_email(self, user_id: int) -> Optional[str]: ...
+    async def get_email(self, tg_user_id: int) -> Optional[str]: ...
 
-    async def save_email(self, user_id: int, email: str) -> None: ...
+    async def save_email(self, tg_user_id: int, email: str) -> None: ...
 
 
 class LeadRepository(Protocol):
@@ -36,8 +39,7 @@ class LeadRepository(Protocol):
 
     async def add_lead(
         self,
-        user_id: int,
-        username: str,
+        tg_user_id: int,
         description: str,
         budget_usd: str,
         contact: str,

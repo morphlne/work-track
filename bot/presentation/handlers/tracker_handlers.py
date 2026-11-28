@@ -33,6 +33,8 @@ def build_tracker_router(
     @router.message(CommandStart())
     async def handle_start(message: Message, state: FSMContext) -> None:
         await state.clear()
+        if message.from_user:
+            await tracker_service.register_user(message.from_user.id, message.from_user.full_name, message.from_user.username)
         await message.answer(
             translator.get("messages.start"),
             reply_markup=build_main_menu_keyboard(translator),
@@ -49,7 +51,7 @@ def build_tracker_router(
     @router.message(F.text == translator.get("buttons.add_task"))
     async def handle_add_task_start(message: Message, state: FSMContext) -> None:
         recent_tasks = await tracker_service.get_recent_today_tasks(
-            user_id=message.from_user.id,
+            tg_user_id=message.from_user.id,
             limit=7,
         )
         recent_map = {
@@ -135,7 +137,7 @@ def build_tracker_router(
         task_title = data["task_title"]
         task_id = data.get("task_id")
         entry = await tracker_service.record_task(
-            user_id=message.from_user.id,
+            tg_user_id=message.from_user.id,
             title=task_title,
             hours=hours,
             task_id=task_id,
@@ -202,7 +204,7 @@ def build_tracker_router(
         )
         try:
             await tracker_service.send_daily_report_to_email(
-                user_id=user_id,
+                tg_user_id=user_id,
                 recipient_email=saved_email,
             )
         except Exception:
@@ -229,6 +231,8 @@ def build_tracker_router(
         data = await state.get_data()
         send_after_save = data.get("send_after_save", True)
 
+        if message.from_user:
+            await tracker_service.register_user(user_id, message.from_user.full_name, message.from_user.username)
         await tracker_service.save_user_email(user_id, recipient_email)
         await state.clear()
 
@@ -244,7 +248,7 @@ def build_tracker_router(
         )
         try:
             await tracker_service.send_daily_report_to_email(
-                user_id=user_id,
+                tg_user_id=user_id,
                 recipient_email=recipient_email,
             )
         except Exception:
@@ -306,12 +310,9 @@ def build_tracker_router(
         if contact_parts:
             data = await state.get_data()
             auto_contact = ", ".join(contact_parts)
-            display_username = tg_username or (user.full_name if user else "Без username")
-
             try:
                 await tracker_service.submit_lead_request(
-                    user_id=user.id,
-                    username=display_username,
+                    tg_user_id=user.id,
                     description=data["lead_description"],
                     budget_usd=budget_usd,
                     contact=auto_contact,
@@ -352,12 +353,9 @@ def build_tracker_router(
 
         user = message.from_user
         data = await state.get_data()
-        display_username = user.full_name if user else "Без username"
-
         try:
             await tracker_service.submit_lead_request(
-                user_id=user.id,
-                username=display_username,
+                tg_user_id=user.id,
                 description=data["lead_description"],
                 budget_usd=data["lead_budget"],
                 contact=contact,

@@ -5,7 +5,7 @@ from datetime import date, datetime
 @dataclass(frozen=True)
 class TaskEntry:
     id: int
-    user_id: int
+    tg_user_id: int
     title: str
     hours: float
     created_at: datetime
@@ -36,8 +36,7 @@ class DailyBriefing:
 @dataclass(frozen=True)
 class LeadRequest:
     id: int
-    user_id: int
-    username: str
+    tg_user_id: int
     description: str
     budget_usd: str
     contact: str

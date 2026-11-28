@@ -74,7 +74,7 @@ daily_report_subject = "Отчёт по задачам за {date}"
 lead_subject = "Новая заявка: проект под бизнес (${budget})"
 lead_body = """Новая заявка из Telegram-бота WorkTrack
 Дата (UTC): {created_at}
-Telegram: {username} (ID: {user_id})
+Telegram ID: {tg_user_id}
 Контакт для связи: {contact}
 Оплата / бюджет (USD): {budget}
 

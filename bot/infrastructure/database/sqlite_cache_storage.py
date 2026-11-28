@@ -12,7 +12,7 @@ class SQLiteCacheStorage:
         async with self._connection_manager.connect() as db:
             await db.execute(
                 """
-                CREATE TABLE IF NOT EXISTS api_cache (
+                CREATE TABLE IF NOT EXISTS cache (
                     cache_key TEXT PRIMARY KEY,
                     payload TEXT NOT NULL,
                     expires_at INTEGER NOT NULL
@@ -25,7 +25,7 @@ class SQLiteCacheStorage:
         now_ts = int(time.time())
         async with self._connection_manager.connect() as db:
             cursor = await db.execute(
-                "SELECT payload, expires_at FROM api_cache WHERE cache_key = ?",
+                "SELECT payload, expires_at FROM cache WHERE cache_key = ?",
                 (key,),
             )
             row = await cursor.fetchone()
@@ -34,7 +34,7 @@ class SQLiteCacheStorage:
 
             payload, expires_at = row
             if expires_at <= now_ts:
-                await db.execute("DELETE FROM api_cache WHERE cache_key = ?", (key,))
+                await db.execute("DELETE FROM cache WHERE cache_key = ?", (key,))
                 await db.commit()
                 return None
 
@@ -45,7 +45,7 @@ class SQLiteCacheStorage:
         async with self._connection_manager.connect() as db:
             await db.execute(
                 """
-                INSERT INTO api_cache (cache_key, payload, expires_at)
+                INSERT INTO cache (cache_key, payload, expires_at)
                 VALUES (?, ?, ?)
                 ON CONFLICT(cache_key) DO UPDATE SET
                     payload = excluded.payload,
