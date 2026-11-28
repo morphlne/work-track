@@ -11,6 +11,7 @@ from bot.localization.translator import Translator
 from bot.presentation.keyboards.main_menu import (
     build_cancel_keyboard,
     build_main_menu_keyboard,
+    build_task_duration_keyboard,
 )
 from bot.presentation.states.tracker_states import (
     EmailInputState,
@@ -63,20 +64,37 @@ def build_tracker_router(
         await state.set_state(TaskInputState.waiting_for_hours)
         await message.answer(
             translator.get("messages.ask_task_hours"),
-            reply_markup=build_cancel_keyboard(translator),
+            reply_markup=build_task_duration_keyboard(translator),
         )
 
     @router.message(TaskInputState.waiting_for_hours)
     async def handle_task_hours(message: Message, state: FSMContext) -> None:
-        raw_value = (message.text or "").strip().replace(",", ".")
-        try:
-            hours = float(raw_value)
-        except ValueError:
-            await message.answer(translator.get("messages.invalid_hours_number"))
-            return
+        duration_map = {
+            translator.get("buttons.time_15m"): 0.25,
+            translator.get("buttons.time_30m"): 0.5,
+            translator.get("buttons.time_45m"): 0.75,
+            translator.get("buttons.time_1h"): 1.0,
+            translator.get("buttons.time_2h"): 2.0,
+            translator.get("buttons.time_3h"): 3.0,
+            translator.get("buttons.time_4h"): 4.0,
+            translator.get("buttons.time_5h"): 5.0,
+            translator.get("buttons.time_6h"): 6.0,
+            translator.get("buttons.time_7h"): 7.0,
+            translator.get("buttons.time_8h"): 8.0,
+        }
+        selected_text = (message.text or "").strip()
+        hours = duration_map.get(selected_text)
 
-        if hours <= 0 or hours > 24:
-            await message.answer(translator.get("messages.invalid_hours_range"))
+        if hours is None and selected_text.isdigit():
+            parsed_hours = int(selected_text)
+            if 1 <= parsed_hours <= 8:
+                hours = float(parsed_hours)
+
+        if hours is None:
+            await message.answer(
+                translator.get("messages.invalid_hours_choice"),
+                reply_markup=build_task_duration_keyboard(translator),
+            )
             return
 
         data = await state.get_data()

@@ -26,3 +26,32 @@ def build_cancel_keyboard(translator: Translator) -> ReplyKeyboardMarkup:
         keyboard=[[KeyboardButton(text=translator.get("buttons.cancel"))]],
         resize_keyboard=True,
     )
+
+
+def build_task_duration_keyboard(translator: Translator) -> ReplyKeyboardMarkup:
+    return ReplyKeyboardMarkup(
+        keyboard=[
+            [
+                KeyboardButton(text=translator.get("buttons.time_15m")),
+                KeyboardButton(text=translator.get("buttons.time_30m")),
+                KeyboardButton(text=translator.get("buttons.time_45m")),
+            ],
+            [
+                KeyboardButton(text=translator.get("buttons.time_1h")),
+                KeyboardButton(text=translator.get("buttons.time_2h")),
+                KeyboardButton(text=translator.get("buttons.time_3h")),
+            ],
+            [
+                KeyboardButton(text=translator.get("buttons.time_4h")),
+                KeyboardButton(text=translator.get("buttons.time_5h")),
+                KeyboardButton(text=translator.get("buttons.time_6h")),
+            ],
+            [
+                KeyboardButton(text=translator.get("buttons.time_7h")),
+                KeyboardButton(text=translator.get("buttons.time_8h")),
+                KeyboardButton(text=translator.get("buttons.cancel")),
+            ],
+        ],
+        resize_keyboard=True,
+        input_field_placeholder=translator.get("messages.select_time_placeholder"),
+    )
